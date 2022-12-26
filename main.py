@@ -26,6 +26,7 @@ LEVELS = [
     (16, 40),
     (24, 99)
 ]
+CURRENT_LEVEL = 1
 
 STATUS_READY = 0
 STATUS_PLAYING = 1
