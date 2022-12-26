@@ -229,3 +229,81 @@ class MainWindow(QMainWindow):
             n_mines = sum(1 if w.is_mine else 0 for w in positions)
 
             return n_mines
+
+        # Add adjacencies to the positions
+        for x in range(0, self.b_size):
+            for y in range(0, self.b_size):
+                w = self.grid.itemAtPosition(y, x).widget()
+                w.adjacent_n = get_adjacency_n(x, y)
+
+        # Place starting marker
+        while True:
+            x, y = random.randint(0, self.b_size - 1), random.randint(0, self.b_size - 1)
+            w = self.grid.itemAtPosition(y, x).widget()
+            # We don't want to start on a mine.
+            if (x, y) not in positions:
+                w = self.grid.itemAtPosition(y, x).widget()
+                w.is_start = True
+
+                # Reveal all positions around this, if they are not mines either.
+                for w in self.get_surrounding(x, y):
+                    if not w.is_mine:
+                        w.click()
+                break
+
+    def get_surrounding(self, x, y):
+        positions = []
+
+        for xi in range(max(0, x - 1), min(x + 2, self.b_size)):
+            for yi in range(max(0, y - 1), min(y + 2, self.b_size)):
+                positions.append(self.grid.itemAtPosition(yi, xi).widget())
+
+        return positions
+
+    def button_pressed(self):
+        if self.status == STATUS_PLAYING:
+            self.update_status(STATUS_FAILED)
+            self.reveal_map()
+
+        elif self.status == STATUS_FAILED:
+            self.update_status(STATUS_READY)
+            self.reset_map()
+
+    def reveal_map(self):
+        for x in range(0, self.b_size):
+            for y in range(0, self.b_size):
+                w = self.grid.itemAtPosition(y, x).widget()
+                w.reveal()
+
+    def expand_reveal(self, x, y):
+        for xi in range(max(0, x - 1), min(x + 2, self.b_size)):
+            for yi in range(max(0, y - 1), min(y + 2, self.b_size)):
+                w = self.grid.itemAtPosition(yi, xi).widget()
+                if not w.is_mine:
+                    w.click()
+
+    def trigger_start(self, *args):
+        if self.status != STATUS_PLAYING:
+            # First click.
+            self.update_status(STATUS_PLAYING)
+            # Start timer.
+            self._timer_start_nsecs = int(time.time())
+
+    def update_status(self, status):
+        self.status = status
+        self.button.setIcon(QIcon(STATUS_ICONS[self.status]))
+
+    def update_timer(self):
+        if self.status == STATUS_PLAYING:
+            n_secs = int(time.time()) - self._timer_start_nsecs
+            self.clock.setText("%03d" % n_secs)
+
+    def game_over(self):
+        self.reveal_map()
+        self.update_status(STATUS_FAILED)
+
+
+if __name__ == '__main__':
+    app = QApplication([])
+    window = MainWindow()
+    app.exec_()
