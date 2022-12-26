@@ -21,12 +21,12 @@ NUM_COLORS = {
     8: QColor('#FF9800')
 }
 
+CURRENT_LEVEL = 1
 LEVELS = [
     (8, 10),
     (16, 40),
     (24, 99)
 ]
-CURRENT_LEVEL = 1
 
 STATUS_READY = 0
 STATUS_PLAYING = 1
