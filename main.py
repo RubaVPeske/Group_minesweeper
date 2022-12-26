@@ -127,3 +127,105 @@ class Pos(QWidget):
 
             if self.is_mine:
                 self.ohno.emit()
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+
+        self.b_size, self.n_mines = LEVELS[1]
+
+        w = QWidget()
+        hb = QHBoxLayout()
+
+        self.mines = QLabel()
+        self.mines.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+        self.clock = QLabel()
+        self.clock.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+        f = self.mines.font()
+        f.setPointSize(24)
+        f.setWeight(75)
+        self.mines.setFont(f)
+        self.clock.setFont(f)
+
+        self._timer = QTimer()
+        self._timer.timeout.connect(self.update_timer)
+        self._timer.start(1000)  # 1 second timer
+
+        self.mines.setText("%03d" % self.n_mines)
+        self.clock.setText("000")
+
+        self.button = QPushButton()
+        self.button.setFixedSize(QSize(32, 32))
+        self.button.setIconSize(QSize(32, 32))
+        self.button.setIcon(QIcon("./images/smiley.png"))
+        self.button.setFlat(True)
+
+        self.button.pressed.connect(self.button_pressed)
+
+        l = QLabel()
+        l.setPixmap(QPixmap.fromImage(IMG_BOMB))
+        l.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        hb.addWidget(l)
+
+        hb.addWidget(self.mines)
+        hb.addWidget(self.button)
+        hb.addWidget(self.clock)
+
+        l = QLabel()
+        l.setPixmap(QPixmap.fromImage(IMG_CLOCK))
+        l.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        hb.addWidget(l)
+
+        vb = QVBoxLayout()
+        vb.addLayout(hb)
+
+        self.grid = QGridLayout()
+        self.grid.setSpacing(5)
+
+        vb.addLayout(self.grid)
+        w.setLayout(vb)
+        self.setCentralWidget(w)
+
+        self.init_map()
+        self.update_status(STATUS_READY)
+
+        self.reset_map()
+        self.update_status(STATUS_READY)
+
+        self.show()
+
+    def init_map(self):
+        # Add positions to the map
+        for x in range(0, self.b_size):
+            for y in range(0, self.b_size):
+                w = Pos(x, y)
+                self.grid.addWidget(w, y, x)
+                # Connect signal to handle expansion.
+                w.clicked.connect(self.trigger_start)
+                w.expandable.connect(self.expand_reveal)
+                w.ohno.connect(self.game_over)
+
+    def reset_map(self):
+        # Clear all mine positions
+        for x in range(0, self.b_size):
+            for y in range(0, self.b_size):
+                w = self.grid.itemAtPosition(y, x).widget()
+                w.reset()
+
+        # Add mines to the positions
+        positions = []
+        while len(positions) < self.n_mines:
+            x, y = random.randint(0, self.b_size - 1), random.randint(0, self.b_size - 1)
+            if (x, y) not in positions:
+                w = self.grid.itemAtPosition(y, x).widget()
+                w.is_mine = True
+                positions.append((x, y))
+
+        def get_adjacency_n(x, y):
+            positions = self.get_surrounding(x, y)
+            n_mines = sum(1 if w.is_mine else 0 for w in positions)
+
+            return n_mines
