@@ -21,7 +21,6 @@ NUM_COLORS = {
     8: QColor('#FF9800')
 }
 
-CURRENT_LEVEL = 1
 LEVELS = [
     (8, 10),
     (16, 40),
@@ -197,6 +196,7 @@ class MainWindow(QMainWindow):
         self.update_status(STATUS_READY)
 
         self.show()
+
     def init_map(self):
         # Add positions to the map
         for x in range(0, self.b_size):
